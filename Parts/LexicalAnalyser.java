@@ -16,7 +16,7 @@ public class LexicalAnalyser {
     //regex
     private String[] keywords = {"HAI", "KTHXBYE", "BTW", "OBTW", "TLDR", "ITZ", "NOT",
     "DIFFRINT", "SMOOSH", "MAEK", "I HAS A","IS NOW A", "VISIBLE", "GIMMEH", "MEBBE",  "OIC", "WTF", "OMG", 
-    "OMGWTF", "UPPIN", "NERFIN","YR", "TIL", "WILE", "SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", 
+    "OMGWTF", "UPPIN", "NERFIN","YR", "TIL", "WILE", "GTFO", "SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", 
     "MOD OF", "BIGGR OF", "SMALLR OF","WON OF", "BOTH OF", "EITHER OF","ANY OF", "ALL OF", "BOTH SAEM",
     "O RLY", "YA RLY","NO WAI","IM IN YR","IM OUTTA YR","AN","A","R"};
     private String[] numbar = {"(-)?[0-9]+.[0-9]+"};
@@ -176,9 +176,69 @@ public class LexicalAnalyser {
         return false;
     }
 
-    private void updateSymbolTable(ArrayList<String> lexemes, String type){
-        for (String s : lexemes){
-            this.symbolTable.add(new Token(s, type));
+    private int findFirstLetter(){
+        String[] emptyStr = this.loc.split("");
+        for (int i = 0 ; i < emptyStr.length; i++){
+            if (emptyStr[i].matches("[^\\s]")){
+                return i;
+            }
+        }
+        
+        return -1;
+    }
+
+    private boolean addLexemeToSymbolTable(ArrayList<String> lexemes, String type){
+        String substr;
+        int startIndex = 0;
+        for (String lexeme : lexemes){
+            if (lexeme.length() <= this.loc.length()){
+                //find the first occurence of a non-whitespace char
+                startIndex = this.findFirstLetter();
+                
+                // find the substring that contains the lexeme
+                if (lexeme.length()+startIndex <= this.loc.length()){
+                    substr = this.loc.substring(startIndex, lexeme.length()+startIndex);
+                } else {
+                    substr = this.loc.substring(startIndex);
+                }
+
+                //we've found the lexeme
+                if (substr.equals(lexeme)){
+                    this.symbolTable.add(new Token(lexeme, type));
+
+                    //modify the loc and remove the lexeme
+                    if (substr.length()+1+startIndex >= this.loc.length()){
+                        this.loc = "";
+                    } else {
+                        this.loc = this.loc.substring(substr.length()+1+startIndex);
+                    }
+                    // System.out.println(substr);
+                    lexemes.remove(lexeme);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private void updateSymbolTable(ArrayList<String> keywordLexeme,ArrayList<String> yarnLexeme,ArrayList<String> troofLexeme,ArrayList<String> typeLexeme,ArrayList<String> variableLexeme,ArrayList<String> numbarLexeme,ArrayList<String> numbrLexeme){
+        boolean lexemeFound;
+        String mult;
+        while (this.checkNotEmpty()){
+            mult = this.loc;
+            lexemeFound = this.addLexemeToSymbolTable(troofLexeme, "Troof");
+            if (!lexemeFound) lexemeFound = this.addLexemeToSymbolTable(typeLexeme, "Type");
+            if (!lexemeFound) lexemeFound = this.addLexemeToSymbolTable(keywordLexeme, "Keyword");
+            if (!lexemeFound) lexemeFound = this.addLexemeToSymbolTable(yarnLexeme, "Yarn");
+            if (!lexemeFound) lexemeFound = this.addLexemeToSymbolTable(variableLexeme, "Variable identifier");
+            if (!lexemeFound) lexemeFound = this.addLexemeToSymbolTable(numbarLexeme, "Numbar");
+            if (!lexemeFound) lexemeFound = this.addLexemeToSymbolTable(numbrLexeme, "Numbr");   
+          
+
+            if (this.loc.equals(mult)){
+                // System.out.println(this.loc);
+                break;
+            }
         }
     }
 
@@ -191,14 +251,15 @@ public class LexicalAnalyser {
         ArrayList<String> typeLexeme;
         ArrayList<String> variableLexeme;
         ArrayList<String> commentStr;
-        String modifiedCode;
+        String cleanLOC;
 
         try{
             for (String code : linesOfCode) {
                 
+                //cleanLOC should contain the "clean" version of the line of code (no comments or anything)
                 commentStr = removeComment(code);
                 this.loc = commentStr.get(0);
-                modifiedCode = commentStr.get(1);
+                cleanLOC = commentStr.get(1);
                 // System.out.println(this.loc);
 
                 //get the Token from the lines of code                
@@ -216,21 +277,15 @@ public class LexicalAnalyser {
                 }
                 
                 //add the tokens to the symbol table
-                //this.updateSymbolTable(array of lexemes, type of that lexeme)
-                this.updateSymbolTable(keywordLexeme, "Keyword");
-                this.updateSymbolTable(yarnLexeme, "Yarn");
-                this.updateSymbolTable(troofLexeme, "Troof");
-                this.updateSymbolTable(typeLexeme, "Type");
-                this.updateSymbolTable(variableLexeme, "Variable identifier");
-                this.updateSymbolTable(numbarLexeme, "Numbar");
-                this.updateSymbolTable(numbrLexeme, "Numbr");
-                
+
+                this.loc = commentStr.get(1);
+                this.updateSymbolTable(keywordLexeme, yarnLexeme, troofLexeme, typeLexeme, variableLexeme, numbarLexeme, numbrLexeme);
 
                 if (this.multilineComment){ //if this is a multiline comment
                     continue;
                 }
                 
-                this.program.add(modifiedCode);
+                this.program.add(cleanLOC);
 
             }
             
