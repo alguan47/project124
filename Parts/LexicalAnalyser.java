@@ -1,6 +1,7 @@
 package Parts;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -18,14 +19,29 @@ public class LexicalAnalyser {
     "DIFFRINT", "SMOOSH", "MAEK", "I HAS A","IS NOW A", "VISIBLE", "GIMMEH", "MEBBE",  "OIC", "WTF", "OMG", 
     "OMGWTF", "UPPIN", "NERFIN","YR", "TIL", "WILE", "GTFO", "SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", 
     "MOD OF", "BIGGR OF", "SMALLR OF","WON OF", "BOTH OF", "EITHER OF","ANY OF", "ALL OF", "BOTH SAEM",
-    "O RLY", "YA RLY","NO WAI","IM IN YR","IM OUTTA YR","AN","A","R"};
-    private String[] numbar = {"(-)?[0-9]+.[0-9]+"};
+    "O RLY", "YA RLY","NO WAI","IM IN YR","IM OUTTA YR","AN","A","R", "MKAY"};
+    private String[] numbar = {"(-)?[0-9]+\\.[0-9]+"};
     private String[] numbr = {"(-)?[0-9]+"};
     private String[] yarn = {"\"[^\"]+\""};
     private String[] troof = {"(WIN|FAIL)"};
     private String[] typeLiteral = {"(NOOB|NUMBR|NUMBAR|YARN|TROOF|TYPE)"};
     private String[] variableIdentifier = {"[A-Za-z][A-Za-z0-9_]*"};
     
+    private String[] arithmeticOp = {"SUM OF", "DIFF OF", "PRODUKT OF", "QUOSHUNT OF", "MOD OF", "BIGGR OF", "SMALLR OF"};
+    private String[] finiteBoolean = {"BOTH OF", "EITHER OF", "WON OF"};
+    private String[] notOp = {"NOT"};
+    private String[] infiniteBoolean = {"ALL OF", "ANY OF"};
+    private String[] booleanEnd = {"MKAY"};
+    private String[] comparsionOp = {"BOTH SAEM", "DIFFRINT"};
+    private String[] concat = {"SMOOSH"};
+    private String[] print = {"VISIBLE"};
+    private String[] input = {"GIMMEH"};
+    private String[] ifOp = {"O RLY?", "YA RLY", "NO WAI", "OIC", "MEBBE"};
+    private String[] caseOp = {"WTF?", "OMG", "OMGWTF", "OIC"};
+    private String[] and = {"AN"};
+    private String[] start = {"HAI"};
+    private String[] end = {"KTHXBYE"};
+
     private ArrayList<Token> symbolTable;
     private ArrayList<String> program;
     private String loc;
@@ -185,6 +201,41 @@ public class LexicalAnalyser {
         return -1;
     }
 
+    private void classifyKeyword(String lexeme){
+        // System.out.println(lexeme);
+        if (Arrays.asList(arithmeticOp).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Arithmetic operator"));
+        } else if (Arrays.asList(finiteBoolean).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Finite boolean operator"));
+        } else if (Arrays.asList(notOp).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Not operator"));
+        } else if (Arrays.asList(infiniteBoolean).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Infinite boolean operator"));
+        } else if (Arrays.asList(comparsionOp).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Comparison operator"));
+        } else if (Arrays.asList(booleanEnd).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "End of boolean operator"));
+        } else if (Arrays.asList(print).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Print operator"));
+        } else if (Arrays.asList(input).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Input operator"));
+        } else if (Arrays.asList(concat).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "String concatenation operator"));
+        } else if (Arrays.asList(ifOp).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "If case keyword"));
+        } else if (Arrays.asList(caseOp).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Switch-case keyword"));
+        } else if (Arrays.asList(and).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Arity keyword"));
+        } else if (Arrays.asList(start).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Program start keyword"));
+        } else if (Arrays.asList(end).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Program end keyword"));
+        } else {
+            this.symbolTable.add(new Token(lexeme, "Keyword"));
+        }
+    }
+
     private boolean addLexemeToSymbolTable(ArrayList<String> lexemes, String type){
         String substr;
         int startIndex = 0;
@@ -202,7 +253,12 @@ public class LexicalAnalyser {
 
                 //we've found the lexeme
                 if (substr.equals(lexeme)){
-                    this.symbolTable.add(new Token(lexeme, type));
+                    if (type.equals("Keyword")){
+                        this.classifyKeyword(lexeme);
+                    } else {
+                        this.symbolTable.add(new Token(lexeme, type));
+                    }
+                        
 
                     //modify the loc and remove the lexeme
                     if (substr.length()+1+startIndex >= this.loc.length()){
@@ -268,6 +324,7 @@ public class LexicalAnalyser {
             numbrLexeme = this.checkRegex(numbr);    
             
             //the string should be empty after removing all of the valid lexemes, if not, there's an error in the lexical analysis
+            System.out.println(this.loc);
             if (this.checkNotEmpty() && !this.multilineComment){
                 throw new Exception("Lexical analysis error");
             }
@@ -287,18 +344,17 @@ public class LexicalAnalyser {
         return this.symbolTable;
     }
 
-
     private void cleanCode(ArrayList<String> code){
         String clean;
         ArrayList<String> comment;
         try{
             for (String loc : code){
-                comment = this.removeComment(loc);
+                comment = this.removeComment(loc.trim());
                 this.loc = comment.get(0);
                 clean = comment.get(1);
                 this.checkRegex(keywords);
 
-                
+
                 if (this.multilineComment) continue;
     
                 this.program.add(clean);
