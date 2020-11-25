@@ -29,13 +29,11 @@ public class LexicalAnalyser {
     private ArrayList<Token> symbolTable;
     private ArrayList<String> program;
     private String loc;
-    private boolean singleComment;
     private boolean multilineComment;
 
     public LexicalAnalyser(){
         this.symbolTable = new ArrayList<Token>();
         this.program = new ArrayList<String>();
-        this.singleComment = false;
         this.multilineComment = false;
     }
 
@@ -242,7 +240,7 @@ public class LexicalAnalyser {
         }
     }
 
-    public ArrayList<Token> lexicalAnalysis(ArrayList<String> linesOfCode) throws Exception {
+    public ArrayList<Token> lexicalAnalysis(String loc) throws Exception {
         ArrayList<String> keywordLexeme;
         ArrayList<String> numbarLexeme;
         ArrayList<String> numbrLexeme;
@@ -250,44 +248,35 @@ public class LexicalAnalyser {
         ArrayList<String> troofLexeme;
         ArrayList<String> typeLexeme;
         ArrayList<String> variableLexeme;
-        ArrayList<String> commentStr;
-        String cleanLOC;
+ 
+
+        this.symbolTable.clear();
 
         try{
-            for (String code : linesOfCode) {
-                
-                //cleanLOC should contain the "clean" version of the line of code (no comments or anything)
-                commentStr = removeComment(code);
-                this.loc = commentStr.get(0);
-                cleanLOC = commentStr.get(1);
-                // System.out.println(this.loc);
+    
+            //cleanLOC should contain the "clean" version of the line of code (no comments or anything)
+            this.loc = loc;
+            // System.out.println(this.loc);
 
-                //get the Token from the lines of code                
-                troofLexeme = this.checkRegex(troof);
-                typeLexeme = this.checkRegex(typeLiteral);
-                keywordLexeme = this.checkRegex(keywords);
-                yarnLexeme = this.checkRegex(yarn);
-                variableLexeme = this.checkRegex(variableIdentifier);
-                numbarLexeme = this.checkRegex(numbar);
-                numbrLexeme = this.checkRegex(numbr);    
-                
-                //the string should be empty after removing all of the valid lexemes, if not, there's an error in the lexical analysis
-                if (this.checkNotEmpty() && !this.multilineComment){
-                    throw new Exception("Lexical analysis error");
-                }
-                
-                //add the tokens to the symbol table
-
-                this.loc = commentStr.get(1);
-                this.updateSymbolTable(keywordLexeme, yarnLexeme, troofLexeme, typeLexeme, variableLexeme, numbarLexeme, numbrLexeme);
-
-                if (this.multilineComment){ //if this is a multiline comment
-                    continue;
-                }
-                
-                this.program.add(cleanLOC);
-
+            //get the Token from the lines of code                
+            troofLexeme = this.checkRegex(troof);
+            typeLexeme = this.checkRegex(typeLiteral);
+            keywordLexeme = this.checkRegex(keywords);
+            yarnLexeme = this.checkRegex(yarn);
+            variableLexeme = this.checkRegex(variableIdentifier);
+            numbarLexeme = this.checkRegex(numbar);
+            numbrLexeme = this.checkRegex(numbr);    
+            
+            //the string should be empty after removing all of the valid lexemes, if not, there's an error in the lexical analysis
+            if (this.checkNotEmpty() && !this.multilineComment){
+                throw new Exception("Lexical analysis error");
             }
+            
+            //add the tokens to the symbol table
+
+            this.loc = loc;
+            this.updateSymbolTable(keywordLexeme, yarnLexeme, troofLexeme, typeLexeme, variableLexeme, numbarLexeme, numbrLexeme);
+
             
         } catch(Exception e){
             e.printStackTrace();
@@ -295,10 +284,36 @@ public class LexicalAnalyser {
 
         if (this.multilineComment) throw new Exception("Lexical Analysis error!");
 
-        return symbolTable;
+        return this.symbolTable;
     }
 
-    public ArrayList<String> getCleanProgram(){
+
+    private void cleanCode(ArrayList<String> code){
+        String clean;
+        ArrayList<String> comment;
+        try{
+            for (String loc : code){
+                comment = this.removeComment(loc);
+                this.loc = comment.get(0);
+                clean = comment.get(1);
+                this.checkRegex(keywords);
+
+                
+                if (this.multilineComment) continue;
+    
+                this.program.add(clean);
+            }
+    
+            if (this.multilineComment) throw new Exception("Preprocessing code has run into a problem");
+        } catch (Exception e){
+            System.out.println(e);
+        }
+    }
+
+    public ArrayList<String> getCleanProgram(ArrayList<String> code){
+
+        this.cleanCode(code);
+        
         return this.program;
     }
 
