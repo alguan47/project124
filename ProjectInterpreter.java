@@ -16,12 +16,26 @@ public class ProjectInterpreter{
         //clean the code by removing the comments first
         ArrayList<String> cleanedProgram = lexicalAnalyser.getCleanProgram(linesOfCode);
         ArrayList<Token> newSymbolTable;
-
+        String loc;
         //add it to the symbol table
-        for (String loc : cleanedProgram){
+        boolean noErr = true;
+        for (int i = 0 ; i < cleanedProgram.size(); i++){
+            loc = cleanedProgram.get(i);
             newSymbolTable = lexicalAnalyser.lexicalAnalysis(loc);
             symbolTable.addAll(newSymbolTable);
-            System.out.println("Syntactically correct? " + syntaxAnalyser.syntaxAnalyse(newSymbolTable));
+            if (!syntaxAnalyser.syntaxAnalyse(newSymbolTable)){
+                System.out.println("Syntax error at line " + (i+1));
+                noErr = false;
+                break;
+            }
+        }
+
+        if (!syntaxAnalyser.isEndProgram() && noErr){
+            System.out.println("KTHXBYE not found; Syntax error at line " + cleanedProgram.size());
+        }
+
+        if (!syntaxAnalyser.isEndIfBlock() && noErr){
+            System.out.println("OIC not found; Syntax error!");
         }
         
         //print the cleaned code

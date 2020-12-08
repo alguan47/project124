@@ -36,11 +36,20 @@ public class LexicalAnalyser {
     private String[] concat = {"SMOOSH"};
     private String[] print = {"VISIBLE"};
     private String[] input = {"GIMMEH"};
-    private String[] ifOp = {"O RLY?", "YA RLY", "NO WAI", "OIC", "MEBBE"};
-    private String[] caseOp = {"WTF?", "OMG", "OMGWTF", "OIC"};
+    private String[] ifStart = {"O RLY?"};
+    private String[] ifKey = {"YA RLY"};
+    private String[] elifKey = {"MEBBE"};
+    private String[] elseKey = {"NO WAI"};
+    private String[] flowEnd = {"OIC"};
+    private String[] caseStart = {"WTF?"};
+    private String[] caseStatement = {"OMG"};
+    private String[] caseDefault = {"OMGWTF"};
     private String[] and = {"AN"};
     private String[] start = {"HAI"};
     private String[] end = {"KTHXBYE"};
+    private String[] assignment = {"R"};
+    private String[] declaration = {"I HAS A"};
+    private String[] declareAssign = {"ITZ"};
 
     private ArrayList<Token> symbolTable;
     private ArrayList<String> program;
@@ -221,16 +230,34 @@ public class LexicalAnalyser {
             this.symbolTable.add(new Token(lexeme, "Input operator"));
         } else if (Arrays.asList(concat).contains(lexeme)){
             this.symbolTable.add(new Token(lexeme, "String concatenation operator"));
-        } else if (Arrays.asList(ifOp).contains(lexeme)){
-            this.symbolTable.add(new Token(lexeme, "If case keyword"));
-        } else if (Arrays.asList(caseOp).contains(lexeme)){
-            this.symbolTable.add(new Token(lexeme, "Switch-case keyword"));
+        } else if (Arrays.asList(ifStart).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Start of If block keyword"));
+        } else if (Arrays.asList(ifKey).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "If keyword"));
+        } else if (Arrays.asList(elifKey).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Else if keyword"));
+        } else if (Arrays.asList(elseKey).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Else keyword"));
+        } else if (Arrays.asList(flowEnd).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "End of (If or Case) keyword"));
+        } else if (Arrays.asList(caseStart).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Start of Case block keyword"));
+        } else if (Arrays.asList(caseStatement).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Case statement keyword"));
+        } else if (Arrays.asList(caseDefault).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Default case keyword"));
         } else if (Arrays.asList(and).contains(lexeme)){
             this.symbolTable.add(new Token(lexeme, "Arity keyword"));
         } else if (Arrays.asList(start).contains(lexeme)){
             this.symbolTable.add(new Token(lexeme, "Program start keyword"));
         } else if (Arrays.asList(end).contains(lexeme)){
             this.symbolTable.add(new Token(lexeme, "Program end keyword"));
+        } else if (Arrays.asList(assignment).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Assignment operator"));
+        } else if (Arrays.asList(declaration).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Declaration operator"));
+        } else if (Arrays.asList(declareAssign).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Assignment during declaration operator"));
         } else {
             this.symbolTable.add(new Token(lexeme, "Keyword"));
         }
@@ -324,7 +351,7 @@ public class LexicalAnalyser {
             numbrLexeme = this.checkRegex(numbr);    
             
             //the string should be empty after removing all of the valid lexemes, if not, there's an error in the lexical analysis
-            System.out.println(this.loc);
+           
             if (this.checkNotEmpty() && !this.multilineComment){
                 throw new Exception("Lexical analysis error");
             }

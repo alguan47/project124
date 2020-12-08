@@ -11,11 +11,27 @@ import java.util.Arrays;
 public class SyntaxAnalyser {
     private ArrayList<Token> symbolTable;
     private ArrayList<Token> poppedSymbolTable;
-    private boolean isClosedInfiniteArity;
+    private boolean isClosedInfiniteArity;  //check for MKAY
+    private boolean startProgram;   //check for HAI
+    private boolean endProgram;     //check for KTHXBYE
+    private boolean ifStart;        //check for O RLY?
+    private boolean ifStatementFound;   //check for YA RLY
+    private boolean ifEnd;      //check for OIC in IF ELSE 
+    private boolean caseStart;  //check for WTF?
+    private boolean caseStatementFound; //check for OMG
+    private boolean caseEnd;    //check for OIC in case statement 
 
     public SyntaxAnalyser(){
         this.poppedSymbolTable = new ArrayList<Token>();
         this.isClosedInfiniteArity = true;
+        this.startProgram = false;
+        this.endProgram = false;
+        this.ifStart = false;        
+        this.ifStatementFound = false;
+        this.ifEnd = true;      
+        this.caseStart = false;  
+        this.caseStatementFound = false; 
+        this.caseEnd = true;    
     }
 
     private ArrayList<String> parse() throws Exception{
@@ -33,6 +49,24 @@ public class SyntaxAnalyser {
                 return this.parseConcat();
             } else if (lexemeType.equals("Input operator")){
                 return this.parseInput();
+            } else if (lexemeType.equals("Print operator")){
+                return this.parsePrint();
+            } else if (lexemeType.equals("Variable identifier")){
+                return this.parseAssignment();
+            } else if (lexemeType.equals("Program start keyword") || lexemeType.equals("Program end keyword")){
+                return this.parseStartAndEnd();
+            } else if (lexemeType.equals("Start of If block keyword") || lexemeType.equals("If keyword") || lexemeType.equals("Else if keyword") || lexemeType.equals("Else keyword")){
+                return this.parseIfBlock();
+            } else if (lexemeType.equals("End of (If or Case) keyword") && this.ifStart){
+                return this.parseIfBlock();
+            } else if (lexemeType.equals("Start of Case block keyword") || lexemeType.equals("Case statement keyword") || lexemeType.equals("Default case keyword")){
+                return this.parseCaseBlock();
+            } else if (lexemeType.equals("End of (If or Case) keyword") && this.caseStart){
+                return this.parseCaseBlock();
+            } else if (lexemeType.equals("End of (If or Case) keyword")) {  //we found an OIC without any O RLY? or WTF? 
+                throw new Exception("Cannot end an if or case block if it wasn't opened.");
+            } else if (lexemeType.equals("Declaration operator")) {
+                return this.parseDeclaration();
             }
         } 
         return new ArrayList<String>();
@@ -47,7 +81,6 @@ public class SyntaxAnalyser {
                 this.poppedSymbolTable.add(this.symbolTable.remove(0));
                 parseTree.add(keyWord.getType());
             } else {
-                System.out.println(type);
                 throw new Exception("Syntax error!");
             }
         } else throw new Exception("Inadequate arguments");
@@ -77,7 +110,7 @@ public class SyntaxAnalyser {
             parseTree.addAll(this.parseArithmetic());   //get a nested arithmetic operator OR a literal
 
         } catch(Exception e){
-            System.out.println(e);
+           e.printStackTrace();
         }
 
         return parseTree;
@@ -122,7 +155,7 @@ public class SyntaxAnalyser {
             parseTree.addAll(this.parseFiniteBool());   //get a nested arithmetic operator OR a literal
 
         } catch(Exception e){
-            System.out.println(e);
+           e.printStackTrace();
         }
 
         return parseTree;
@@ -134,7 +167,7 @@ public class SyntaxAnalyser {
             parseTree = this.popLexeme(parseTree, "Not operator"); //get NOT
             parseTree.addAll(this.parseFiniteBool());   //get a nested arithmetic operator OR a literal
         } catch(Exception e){
-            System.out.println(e);
+           e.printStackTrace();
         }
 
         return parseTree;
@@ -277,7 +310,7 @@ public class SyntaxAnalyser {
             parseTree.addAll(this.parseArithmetic());   //get a nested arithmetic operator OR a literal
 
         } catch(Exception e){
-            System.out.println(e);
+           e.printStackTrace();
         }
 
         return parseTree;
@@ -298,12 +331,13 @@ public class SyntaxAnalyser {
             parseTree.addAll(this.parseArithmetic());   //get a nested arithmetic operator OR a literal
 
         } catch(Exception e){
-            System.out.println(e);
+           e.printStackTrace();
         }
 
         return parseTree;
     }
 
+    //Concatenation
     private ArrayList<String> parseConcat() throws Exception{
         
         if (this.symbolTable.size() != 0){
@@ -328,7 +362,7 @@ public class SyntaxAnalyser {
             parseTree.addAll(this.parseConcatInf());    //concat infinite number of yarns
 
         } catch(Exception e){
-            System.out.println(e);
+           e.printStackTrace();
         }
 
         return parseTree;
@@ -337,7 +371,7 @@ public class SyntaxAnalyser {
     private ArrayList<String> parseConcatOp() throws Exception{
         if (this.symbolTable.size() != 0){
             Token t = this.symbolTable.get(0);
-            if (t.getType().equals("Troof") || t.getType().equals("Variable identifier") || t.getType().equals("Numbr") || t.getType().equals("Numbar")){
+            if (t.getType().equals("Troof") || t.getType().equals("Variable identifier") || t.getType().equals("Numbr") || t.getType().equals("Numbar") || t.getType().equals("Yarn")){
                 this.symbolTable.remove(0);
                 this.poppedSymbolTable.add(t);
                 return new ArrayList<String>(Arrays.asList(t.getType()));
@@ -376,11 +410,12 @@ public class SyntaxAnalyser {
             parseTree.addAll(this.parseConcatInf());    //concat infinite number of yarns
 
         } catch(Exception e){
-            System.out.println(e);
+           e.printStackTrace();
         }
         return parseTree;
     }
 
+    //User input
     private ArrayList<String> parseInput() throws Exception{
         
         if (this.symbolTable.size() != 0){
@@ -399,7 +434,7 @@ public class SyntaxAnalyser {
             parseTree.addAll(this.parseInputOp());   //get a nested arithmetic operator OR a literal
 
         } catch(Exception e){
-            System.out.println(e);
+           e.printStackTrace();
         }
 
         return parseTree;
@@ -418,27 +453,211 @@ public class SyntaxAnalyser {
         } else throw new Exception("Inadequate arguments");
     }
 
+    //Print statements
+    private ArrayList<String> parsePrint() throws Exception{
+        
+        if (this.symbolTable.size() != 0){
+            if (this.symbolTable.get(0).getType().equals("Print operator")){
+                return this.parsePrintKeyword();
+            }
+        } else throw new Exception("Inadequate arguments");
+        return new ArrayList<String>();
+    }
+
+    private ArrayList<String> parsePrintKeyword(){ 
+        ArrayList<String> parseTree = new ArrayList<String>();
+          
+        try{
+            parseTree = this.popLexeme(parseTree, "Print operator"); //VISIBLE
+            parseTree.addAll(this.parseConcatOp());     //just convert it to yarn later lol.
+            parseTree.addAll(this.parsePrintInf());   //infinite arity
+
+        } catch(Exception e){
+           e.printStackTrace();
+        }
+
+        return parseTree;
+    }
+
+    private ArrayList<String> parsePrintInf() throws Exception{  //for infinity arity
+        ArrayList<String> parseTree = new ArrayList<String>();
+        if (this.symbolTable.size() != 0){
+            parseTree.addAll(this.parseConcatOp()); //get the actual arguments
+            parseTree.addAll(this.parsePrintInf()); //recursively get those remaining arguments
+        }
+        return parseTree;
+    } 
+
+    //Assignment operator
+    private ArrayList<String> parseAssignment() throws Exception{
+        
+        if (this.symbolTable.size() != 0){
+            if (this.symbolTable.get(0).getType().equals("Variable identifier")){
+                return this.parseAssignmentKeyword();
+            }
+        } else throw new Exception("Inadequate arguments");
+        return new ArrayList<String>();
+    }
+
+    private ArrayList<String> parseAssignmentKeyword(){ 
+        ArrayList<String> parseTree = new ArrayList<String>();
+          
+        try{
+            parseTree = this.popLexeme(parseTree, "Variable identifier"); //VISIBLE
+            parseTree = this.popLexeme(parseTree, "Assignment operator");
+            parseTree.addAll(this.parseConcatOp());     //get anything.
+
+        } catch(Exception e){
+           e.printStackTrace();
+        }
+
+        return parseTree;
+    }
+
+    //parse HAI and KTHXBYE
+    private ArrayList<String> parseStartAndEnd(){
+        ArrayList<String> parseTree = new ArrayList<String>();
+        if (this.symbolTable.size() != 0 && this.symbolTable.size() == 1){
+            Token t = this.symbolTable.get(0);
+            if (t.getType().equals("Program start keyword")){
+                this.startProgram = true;
+            } else if (t.getType().equals("Program end keyword")){
+                this.endProgram = true;
+            }
+            parseTree.add(t.getType());
+            this.poppedSymbolTable.add(this.symbolTable.remove(0));
+        } 
+
+        return parseTree;
+    }
+
+    //parse start of if block
+    private ArrayList<String> parseIfBlock() throws Exception{
+        ArrayList<String> parseTree = new ArrayList<String>();
+        if (this.symbolTable.size() != 0 && this.symbolTable.size() == 1){
+            Token t = this.symbolTable.get(0);
+            if (t.getType().equals("Start of If block keyword")){
+                if (!this.ifStart && this.ifEnd && !this.caseStart){
+                    this.ifStart = true;
+                    this.ifEnd = false;
+                } else throw new Exception("Not allowed to start a new if block"); 
+            } 
+            
+            if (t.getType().equals("If keyword")){
+                if (this.ifStart && !this.ifEnd){
+                    this.ifStatementFound = true;
+                } else throw new Exception("Not allowed to have an if statement without O RLY?");
+            } 
+            
+            if (t.getType().equals("Else if keyword")){
+                if (!this.ifStatementFound) throw new Exception("Not allowed to have an else if statement without an accompanying if statement");
+            }
+
+            if (t.getType().equals("Else keyword")){
+                if (!this.ifStatementFound) throw new Exception("Not allowed to have an else statement without an accompanying if statement");
+            }
+            
+            if (t.getType().equals("End of (If or Case) keyword")){
+                if (!this.ifStatementFound) throw new Exception("Not allowed to have a closing block keyword without an accompanying if statement");
+                if (!this.ifStart) throw new Exception("Not allowed to have a closing block keyword without having an accompanying opening block keyword");
+                this.ifEnd = true;
+                this.ifStart = false;
+                this.ifStatementFound = false;
+            }
+            parseTree.add(t.getType());
+            this.poppedSymbolTable.add(this.symbolTable.remove(0));
+        } else throw new Exception("O RLY?, YA RLY, MEBBE, NO WAI, and OIC must be alone in their respective lines");
+
+        return parseTree;
+    }
+
+    private ArrayList<String> parseCaseStatement(Token t) throws Exception{
+        ArrayList<String> parseTree = new ArrayList<String>();
+
+        parseTree = this.popLexeme(parseTree, "Case statement keyword");
+        parseTree.addAll(this.parseConcatOp());
+
+        return parseTree;
+    }
+
+    private ArrayList<String> parseCaseBlock() throws Exception{
+        ArrayList<String> parseTree = new ArrayList<String>();
+        if (this.symbolTable.size() != 0){
+            Token t = this.symbolTable.get(0);
+            if (t.getType().equals("Case statement keyword")){
+                //we need to elaborate on OMG
+                if (t.getType().equals("Case statement keyword")){
+                    if (this.caseStart && !this.caseEnd){
+                        this.caseStatementFound = true;
+                        parseTree.addAll(this.parseCaseStatement(t));
+                    } else throw new Exception("Not allowed to have an case statement without WTF?");
+                } 
+            }else{
+                if (t.getType().equals("Start of Case block keyword")){
+                    if (!this.caseStart && this.caseEnd && !this.ifStart){
+                        this.caseStart = true;
+                        this.caseEnd = false;
+                    } else throw new Exception("Not allowed to start a new case block"); 
+                } 
+                
+                if (t.getType().equals("Default case keyword")){
+                    if (!this.caseStatementFound) throw new Exception("Not allowed to have a default statement without an accompanying case statement");
+                }
+                
+                if (t.getType().equals("End of (If or Case) keyword")){
+                    if (!this.caseStatementFound) throw new Exception("Not allowed to have a closing block keyword without an accompanying case statement");
+                    if (!this.caseStart) throw new Exception("Not allowed to have a closing block keyword without having an accompanying case opening block keyword");
+                    this.caseEnd = true;
+                    this.caseStart = false;
+                    this.caseStatementFound = false;
+                }
+                parseTree.add(t.getType());
+                this.poppedSymbolTable.add(this.symbolTable.remove(0));
+            }
+        } else throw new Exception("WTF?, OMG, OMGWTF, and OIC must be alone in their respective lines");
+
+        return parseTree;
+    }
+
+    private ArrayList<String> parseDeclaration() throws Exception{
+        ArrayList<String> parseTree = new ArrayList<String>();
+        Token t;
+
+        parseTree = this.popLexeme(parseTree, "Declaration operator");
+        parseTree.addAll(this.parseInputOp());
+
+        if (this.symbolTable.size() != 0){
+            t = this.symbolTable.get(0);
+            if (t.getType().equals("Assignment during declaration operator")){
+                parseTree = this.popLexeme(parseTree, "Assignment during declaration operator");
+
+                //get the actual value
+
+                parseTree.addAll(this.parseConcatOp());
+            }
+        }
+
+        return parseTree;
+    }
+
+
     public boolean syntaxAnalyse(ArrayList<Token> symbolTable){
         this.poppedSymbolTable.clear();
-        int symbolTableSize = symbolTable.size();
         this.symbolTable = symbolTable;
         try{
 
             ArrayList<String> parseTree = this.parse();
-            
-            System.out.println(this.poppedSymbolTable.size() != parseTree.size() );
-            System.out.println(this.symbolTable.size() != 0);
-            System.out.println(this.poppedSymbolTable.size() + " " + symbolTableSize);
-            System.out.println(this.symbolTable.size());
+            // System.out.println(this.poppedSymbolTable.size());
+            // System.out.println(parseTree.size());
+            // System.out.println(this.poppedSymbolTable.size() != parseTree.size() );
+            // System.out.println(this.symbolTable.size() != 0);
+            // System.out.println(this.symbolTable.size());
             
             if (this.poppedSymbolTable.size() != parseTree.size()) return false;
             if (this.symbolTable.size() != 0) return false;
             if (!this.isClosedInfiniteArity) return false;
+            if (!this.startProgram) return false;
 
-            for (String s : parseTree){
-                System.out.println(s);
-            }
-    
             for (int i = 0; i < parseTree.size(); i++){
                 if (!parseTree.get(i).equals(this.poppedSymbolTable.get(i).getType())){
                     return false;
@@ -450,5 +669,17 @@ public class SyntaxAnalyser {
             e.printStackTrace();
             return false;
         }
+    }
+
+    public boolean isEndProgram(){  //returns true if KTHXBYE has been read
+        return this.endProgram;
+    }
+
+    public boolean isEndIfBlock(){  //returns true if there is no if-block that has been opened and wasn't closed (didn't meet OIC)
+        return this.ifEnd;
+    }
+
+    public boolean isEndCaseBlock(){  //returns true if there is no case-block that has been opened and wasn't closed (didn't meet OIC)
+        return this.ifEnd;
     }
 }
