@@ -8,22 +8,25 @@ import Parts.Token;
 public class ProjectInterpreter{
     public static void main(String[] args) throws Exception{
         FileHandler fh = new FileHandler();        
-        ArrayList<String> linesOfCode = fh.openFile("./TestFiles/test.lol");
+        ArrayList<String> linesOfCode = fh.openFile("./TestFiles/variables.lol");
         LexicalAnalyser lexicalAnalyser = new LexicalAnalyser();
         SyntaxAnalyser syntaxAnalyser = new SyntaxAnalyser();
         ArrayList<Token> symbolTable = new ArrayList<Token>();
 
         //clean the code by removing the comments first
         ArrayList<String> cleanedProgram = lexicalAnalyser.getCleanProgram(linesOfCode);
-        ArrayList<Token> newSymbolTable;
+        ArrayList<Token> listOfLexemes;
         String loc;
         //add it to the symbol table
         boolean noErr = true;
         for (int i = 0 ; i < cleanedProgram.size(); i++){
             loc = cleanedProgram.get(i);
-            newSymbolTable = lexicalAnalyser.lexicalAnalysis(loc);
-            symbolTable.addAll(newSymbolTable);
-            if (!syntaxAnalyser.syntaxAnalyse(newSymbolTable)){
+            listOfLexemes = lexicalAnalyser.lexicalAnalysis(loc);
+            for (Token t : listOfLexemes){
+                System.out.println(t.getType());
+            }
+            symbolTable.addAll(listOfLexemes);
+            if (!syntaxAnalyser.syntaxAnalyse(listOfLexemes)){
                 System.out.println("Syntax error at line " + (i+1));
                 noErr = false;
                 break;

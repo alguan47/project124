@@ -517,15 +517,27 @@ public class SyntaxAnalyser {
     //parse HAI and KTHXBYE
     private ArrayList<String> parseStartAndEnd(){
         ArrayList<String> parseTree = new ArrayList<String>();
-        if (this.symbolTable.size() != 0 && this.symbolTable.size() == 1){
+        if (this.symbolTable.size() != 0 && this.symbolTable.size() >= 1){
             Token t = this.symbolTable.get(0);
             if (t.getType().equals("Program start keyword")){
                 this.startProgram = true;
+                
+                this.poppedSymbolTable.add(this.symbolTable.remove(0));
+                parseTree.add(t.getType());
+                
+                if (this.symbolTable.size() != 0){  
+                    //in HAI, we may include a version number but this irrelevant and just remove it if it exists or not
+                    Token versionNumber = this.symbolTable.get(0);
+                    this.poppedSymbolTable.add(this.symbolTable.remove(0));
+                    parseTree.add(versionNumber.getType());
+                }
+
             } else if (t.getType().equals("Program end keyword")){
                 this.endProgram = true;
+                this.poppedSymbolTable.add(this.symbolTable.remove(0));
+                parseTree.add(t.getType());
             }
-            parseTree.add(t.getType());
-            this.poppedSymbolTable.add(this.symbolTable.remove(0));
+            
         } 
 
         return parseTree;

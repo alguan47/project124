@@ -62,32 +62,31 @@ public class LexicalAnalyser {
         this.multilineComment = false;
     }
 
-    private ArrayList<String> removeComment(String code){
+    private ArrayList<String> removeUnnecessaryCode(String code){
         ArrayList<String> commentStr = new ArrayList<String>();
         //why ArrayList?
-        //because we need to get two strings: the one that has the keyword BTW,TLDR,OBTW to it because we need to get the lexeme
+        //because we need to get two strings: the one that has the keyword BTW,TLDR,OBTW to it because we need to get the lexeme (to check )
         //and we need another string that has been no comments.
 
-        if (!this.multilineComment){    //we're checking if we are at the start of the multiline comment
-            //+4 and +3 because I need to include the keywords BTW or OBTW in the string    
+        if (!this.multilineComment){    //we're checking if we are at the start of the multiline comment    
             if (code.contains("OBTW")){
-                int beginIndex = code.indexOf("OBTW");
-                commentStr.add(code.substring(0,beginIndex+4));
-                commentStr.add(code.substring(0,beginIndex));
+                int obtwIndex = code.indexOf("OBTW");
+                commentStr.add(code.substring(0,obtwIndex+"OBTW".length()));
+                commentStr.add(code.substring(0,obtwIndex));
             }else if (code.contains("BTW")){
-                int beginIndex = code.indexOf("BTW");
-                commentStr.add(code.substring(0,beginIndex+3));
-                commentStr.add(code.substring(0,beginIndex));
+                int btwIndex = code.indexOf("BTW");
+                commentStr.add(code.substring(0,btwIndex+"BTW".length()));
+                commentStr.add(code.substring(0,btwIndex));
             } else {
                 commentStr.add(code);
                 commentStr.add(code);
             }
-        } else {
+        } else {    //check for the end of a multiline comment OR HAI version number.
             //check if we meet TLDR (end of multiline comment)
             if (code.contains("TLDR")){
                 commentStr.add(code);
                 commentStr.add("");
-            } else {
+            }else {
                 commentStr.add(" ");
                 commentStr.add(" ");
             }
@@ -376,7 +375,7 @@ public class LexicalAnalyser {
         ArrayList<String> comment;
         try{
             for (String loc : code){
-                comment = this.removeComment(loc.trim());
+                comment = this.removeUnnecessaryCode(loc.trim());
                 this.loc = comment.get(0);
                 clean = comment.get(1);
                 this.checkRegex(keywords);
