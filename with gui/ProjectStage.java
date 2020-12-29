@@ -25,6 +25,7 @@ import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -52,6 +53,7 @@ public class ProjectStage{
 	private BorderPane openFile;
 	private BorderPane titles;
 	private BorderPane titles1;
+	private HBox columns;
 	private VBox box;
 	private Font theFont;
 	
@@ -68,6 +70,7 @@ public class ProjectStage{
 	static ArrayList<Token> newSymbolTable;
 	static String codeString;
 	static String lexemesString;
+	static String classificationString;
 	static String tableString;
 	
 	final static int WINDOW_WIDTH = 1300; 
@@ -101,6 +104,7 @@ public class ProjectStage{
 		this.box = new VBox();								//container for all the items
 		this.titles = new BorderPane();						//container for titles and scrollpane of syntactical analysis
 		this.titles1 = new BorderPane();					//container for titles and scrollpane of semantic analysis
+		this.columns = new HBox();
 		
 		this.theFont = Font.font("Helvetica",20);			//set font type, style and size
 		this.label.setFont(this.theFont);
@@ -137,31 +141,35 @@ public class ProjectStage{
     	
     	this.scroll.setPrefSize(415, 420);
     	this.scroll.setPadding(new Insets(5, 20, 5, 20));
-    	this.code = new Text(codeString);			//adds the lolcode
+    	this.code = new Text(codeString);							//adds the lolcode	
     	this.scroll.setContent(code);
     	this.map.add(scroll, 0,1);
     	
     	this.scroll1.setPrefSize(415, 420);
-    	this.scroll1.setPadding(new Insets(5, 20, 5, 20));
-    	this.lexemes = new Text(lexemesString);	//adds the lexemes
-    	this.scroll1.setContent(lexemes);
-    	Text l = new Text("Lexeme\t\t\tClassification");
+    	this.scroll1.setPadding(new Insets(5, 20, 5, 20));					
+
+    	this.columns.getChildren().add(new Text(lexemesString));
+    	this.columns.getChildren().add(new Text(classificationString));
+    	this.columns.setSpacing(30);
+    	
+    	this.scroll1.setContent(columns);							//adds the lexemes
+    	Text l = new Text("\tLexeme\t\t\tClassification");
     	this.titles.setTop(this.lex);
     	BorderPane.setAlignment(this.lex, Pos.CENTER);
-    	this.titles.setCenter(l);
+    	this.titles.setLeft(l);
     	BorderPane.setAlignment(l, Pos.CENTER);
     	this.titles.setBottom(scroll1);
     	this.map.add(titles,1,1);
     	
     	this.scroll2.setPrefSize(415, 420);
     	this.scroll2.setPadding(new Insets(5, 20, 5, 20));
-    	this.tables = new Text(tableString);		//adds the semantic analysis
+    	this.tables = new Text(tableString);						//adds the semantic analysis
     	this.scroll2.setContent(tables);
     	
-    	Text i = new Text("Identifier\t\t\tValue");
+    	Text i = new Text("\tIdentifier\t\t\tValue");
     	this.titles1.setTop(this.table);
     	BorderPane.setAlignment(this.table, Pos.CENTER);
-    	this.titles1.setCenter(i);
+    	this.titles1.setLeft(i);
     	BorderPane.setAlignment(i, Pos.CENTER);
     	this.titles1.setBottom(scroll2);
     	this.map.add(titles1,2,1);
@@ -176,10 +184,11 @@ public class ProjectStage{
     	Button execute = new Button("Execute");
     	execute.setFont(this.theFont);
     	this.addEventHandler(execute);
-    	//add here the button event listener
     	execute.setMaxWidth(Double.MAX_VALUE);
     	this.textarea.setPrefHeight(200);
+    	
     	this.textarea.setText("oh hello there oUo"); //test
+    	
     	this.input.setPrefHeight(100);
     	this.input.setText("input here");
     	this.box.getChildren().addAll(map,execute,this.textarea,this.input);
@@ -211,8 +220,10 @@ public class ProjectStage{
         }
         
         //print the cleaned code
+        codeString = new String("");
         for (String s : cleanedProgram){
             System.out.println(s);
+            codeString = codeString + s + "\n";
         }
 
         System.out.println();
@@ -222,14 +233,14 @@ public class ProjectStage{
             System.out.println(t.getLexeme() + " " + t.getType());
         }
         
-        codeString = new String("");
-        for(String c: cleanedProgram) {
-        	codeString = codeString + c + "\n";
-        }
         lexemesString = new String("");
+        classificationString = new String("");
         for(Token l: symbolTable) {
-        	lexemesString = lexemesString + l.getLexeme() + "\t\t\t" + l.getType() + "\n";
+        	lexemesString = lexemesString + l.getLexeme() + "\n";
+        	classificationString = classificationString + l.getType() + "\n";
         }
+        
+        
         tableString = new String("");
 //        for(Token v: symbolTable) {
 //        	table = table + v.getLexeme() +"\t\t" + v.getType() +"\n";
