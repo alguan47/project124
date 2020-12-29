@@ -20,7 +20,7 @@ HAI 1.2
     you may comment the line below if you will use this program
       for your project
   TLDR
-  choice R MAEK choice A NUMBR
+ 
 
   I HAS A year
 
@@ -45,7 +45,7 @@ HAI 1.2
   OIC
 
   BTW choice!=1 && choice!=2 && choice!=3
-  ALL OF DIFFRINT choice AN 1 AN DIFFRINT choice AN 2 AN DIFFRINT choice AN 3
+  ALL OF DIFFRINT choice AN 1 AN DIFFRINT choice AN 2 AN DIFFRINT choice AN 3 MKAY
 
   O RLY?
     YA RLY

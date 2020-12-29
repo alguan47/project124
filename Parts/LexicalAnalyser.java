@@ -50,6 +50,7 @@ public class LexicalAnalyser {
     private String[] assignment = {"R"};
     private String[] declaration = {"I HAS A"};
     private String[] declareAssign = {"ITZ"};
+    private String[] breakStatement = {"GTFO"};
 
     private ArrayList<Token> symbolTable;
     private ArrayList<String> program;
@@ -257,6 +258,8 @@ public class LexicalAnalyser {
             this.symbolTable.add(new Token(lexeme, "Declaration operator"));
         } else if (Arrays.asList(declareAssign).contains(lexeme)){
             this.symbolTable.add(new Token(lexeme, "Assignment during declaration operator"));
+        } else if (Arrays.asList(breakStatement).contains(lexeme)){
+            this.symbolTable.add(new Token(lexeme, "Break keyword"));
         } else {
             this.symbolTable.add(new Token(lexeme, "Keyword"));
         }

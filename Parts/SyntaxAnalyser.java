@@ -59,7 +59,7 @@ public class SyntaxAnalyser {
                 return this.parseIfBlock();
             } else if (lexemeType.equals("End of (If or Case) keyword") && this.ifStart){
                 return this.parseIfBlock();
-            } else if (lexemeType.equals("Start of Case block keyword") || lexemeType.equals("Case statement keyword") || lexemeType.equals("Default case keyword")){
+            } else if (lexemeType.equals("Start of Case block keyword") || lexemeType.equals("Case statement keyword") || lexemeType.equals("Default case keyword") || lexemeType.equals("Break keyword")){
                 return this.parseCaseBlock();
             } else if (lexemeType.equals("End of (If or Case) keyword") && this.caseStart){
                 return this.parseCaseBlock();
@@ -67,7 +67,7 @@ public class SyntaxAnalyser {
                 throw new Exception("Cannot end an if or case block if it wasn't opened.");
             } else if (lexemeType.equals("Declaration operator")) {
                 return this.parseDeclaration();
-            }
+            } 
         } 
         return new ArrayList<String>();
     }
@@ -174,15 +174,18 @@ public class SyntaxAnalyser {
     }
 
     private ArrayList<String> parseFiniteBoolOp() throws Exception{
+        
         if (this.symbolTable.size() != 0){
             Token t = this.symbolTable.get(0);
             if (t.getType().equals("Troof") || t.getType().equals("Variable identifier")){
                 this.symbolTable.remove(0);
                 this.poppedSymbolTable.add(t);
                 return new ArrayList<String>(Arrays.asList(t.getType()));
-            } else {
-                throw new Exception("Invalid operand for a boolean operation");
+            } else if (t.getType().equals("Comparison operator")) { //check for comparison too
+                return this.parseComparison();
             }
+
+            return new ArrayList<String>();
         } else throw new Exception("Inadequate arguments");
     }
 
@@ -603,7 +606,12 @@ public class SyntaxAnalyser {
                         this.caseStatementFound = true;
                         parseTree.addAll(this.parseCaseStatement(t));
                     } else throw new Exception("Not allowed to have an case statement without WTF?");
-                } 
+                } else if (t.getType().equals("Break keyword")){
+                    if (this.caseStart && !this.caseEnd && this.caseStatementFound){
+                        parseTree.addAll(this.popLexeme(parseTree, "Break keyword"));
+                        this.caseStatementFound = false;
+                    } else throw new Exception("Break keyword only works for case statements");
+                }
             }else{
                 if (t.getType().equals("Start of Case block keyword")){
                     if (!this.caseStart && this.caseEnd && !this.ifStart){
@@ -665,6 +673,7 @@ public class SyntaxAnalyser {
             // System.out.println(this.symbolTable.size() != 0);
             // System.out.println(this.symbolTable.size());
             
+            if (this.symbolTable.size() == 0) return true;      //it a blank line of code
             if (this.poppedSymbolTable.size() != parseTree.size()) return false;
             if (this.symbolTable.size() != 0) return false;
             if (!this.isClosedInfiniteArity) return false;
