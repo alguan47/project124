@@ -8,7 +8,7 @@ import Parts.Token;
 public class ProjectInterpreter{
     public static void main(String[] args) throws Exception{
         FileHandler fh = new FileHandler();        
-        ArrayList<String> linesOfCode = fh.openFile("./TestFiles/sample.lol");
+        ArrayList<String> linesOfCode = fh.openFile("./TestFiles/bool.lol");
         LexicalAnalyser lexicalAnalyser = new LexicalAnalyser();
         SyntaxAnalyser syntaxAnalyser = new SyntaxAnalyser();
         ArrayList<Token> symbolTable = new ArrayList<Token>();

@@ -374,13 +374,14 @@ public class SyntaxAnalyser {
     private ArrayList<String> parseConcatOp() throws Exception{
         if (this.symbolTable.size() != 0){
             Token t = this.symbolTable.get(0);
+            
             if (t.getType().equals("Troof") || t.getType().equals("Variable identifier") || t.getType().equals("Numbr") || t.getType().equals("Numbar") || t.getType().equals("Yarn")){
                 this.symbolTable.remove(0);
                 this.poppedSymbolTable.add(t);
                 return new ArrayList<String>(Arrays.asList(t.getType()));
             } else  if (t.getType().equals("Arithmetic operator")){
                 return this.parseArithmetic();
-            } else if (t.getType().equals("Finite boolean operator")){
+            } else if (t.getType().equals("Finite boolean operator") || t.getType().equals("Not operator")){
                 return this.parseFiniteBool();
             } else if (t.getType().equals("Infinite boolean operator")){
                 return this.parseInfiniteBool();
