@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import FileHandlers.FileHandler;
 import Parts.LexicalAnalyser;
+import Parts.SemanticAnalyzer;
 import Parts.SyntaxAnalyser;
 import Parts.Token;
 import javafx.event.ActionEvent;
@@ -54,37 +55,33 @@ public class ProjectStage{
 	private BorderPane titles;
 	private BorderPane titles1;
 	private HBox columns;
+	private HBox columns1;
 	private VBox box;
 	private Font theFont;
 	
-	private TextArea textarea;
+	private TextArea terminal;
 	private TextArea input;
-	private Text code; 
-	private Text lexemes;
-	private Text tables;
+	private Text code;
 	private String inputString;
 	
-	static ArrayList<String> linesOfCode;
-	static ArrayList<Token> symbolTable;
-	static ArrayList<String> cleanedProgram;
-	static ArrayList<Token> newSymbolTable;
 	static String codeString;
 	static String lexemesString;
 	static String classificationString;
-	static String tableString;
+	static String identifierString;
+	static String valueString;
 	
 	final static int WINDOW_WIDTH = 1300; 
 	final static int WINDOW_HEIGHT = 920;
-	final static int GRIDPANE_SIZE = 1300;
 	
     public ProjectStage(String path){
     	this.root = new Group();
-		this.canvas = new Canvas(ProjectStage.WINDOW_WIDTH,ProjectStage.WINDOW_HEIGHT);	
+    	
+		this.canvas = new Canvas(ProjectStage.WINDOW_WIDTH,ProjectStage.WINDOW_HEIGHT);	//might remove, just for backgrounds
 		this.gc = canvas.getGraphicsContext2D();
 		
 		this.scene = new Scene(root, ProjectStage.WINDOW_WIDTH,ProjectStage.WINDOW_HEIGHT,Color.WHITE);	
 		
-		this.label = new Label(path);					//text indicating location of file
+		this.label = new Label(path);						//text string of location of file
 		this.pathText = new ScrollPane();
 		this.openFileButton = new Button("Open New File");  //button for opening new file
 		
@@ -97,61 +94,66 @@ public class ProjectStage{
 		this.scroll1 = new ScrollPane();					//scrollpane for syntactical analysis
 		this.scroll2 = new ScrollPane();					//scrollpane for semantic analysis
 		
-		this.textarea = new TextArea("Test");					//window for executing the lolcode
+		this.terminal = new TextArea();						//window for executing the lolcode / terminal
 		this.input = new TextArea();						//text area for inputs
-		this.inputString = new String();
+		this.inputString = new String();					//string of the inputs
 		this.map = new GridPane();							//container for the top half of the interpreter
 		this.box = new VBox();								//container for all the items
 		this.titles = new BorderPane();						//container for titles and scrollpane of syntactical analysis
 		this.titles1 = new BorderPane();					//container for titles and scrollpane of semantic analysis
-		this.columns = new HBox();
+		this.columns = new HBox();							//conatainer for the values of syntactical analysis
+		this.columns1 = new HBox();							//conatainer for the values of semantic analysis
 		
 		this.theFont = Font.font("Helvetica",20);			//set font type, style and size
 		this.label.setFont(this.theFont);
 		this.lci.setFont(this.theFont);
 		this.lex.setFont(this.theFont);
 		this.table.setFont(this.theFont);
-		this.textarea.setFont(new Font("Lucida Console",20));
+		this.terminal.setFont(new Font("Lucida Console",20));
 		this.input.setFont(new Font("Lucida Console",20));
     }
     
     /**
-     * @param primaryStage
+     * @param primaryStage, path
      * @throws Exception 
+     */
+    /**
+     * @param primaryStage
+     * @param path
+     * @throws Exception
      */
     public void setStage(Stage primaryStage, String path) throws Exception {
     	stage = primaryStage;
     	this.read(path);
 //    	this.gc.setFill(Color.BLACK);
     	
+    	//openfile container
     	this.pathText.setContent(this.label);
     	this.pathText.setPrefSize(300, 50);
     	this.openFile.setLeft(this.pathText);	
     	this.openFile.setRight(this.openFileButton);
     	this.openFileButton.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-    	
     	this.openNewFile(openFileButton,primaryStage);
-    	
     	this.openFile.setBackground(new Background(new BackgroundFill(Color.LIGHTGRAY, new CornerRadii(5), new Insets(-2, -2, -2, -2))));
     	this.map.add(openFile, 0, 0);
     	
-    	
+    	//lol code interpreter title
     	this.map.add(this.lci, 1, 0, 2, 1);
     	GridPane.setHalignment(this.lci, HPos.CENTER);
     	
+    	//container for lolcode
     	this.scroll.setPrefSize(415, 420);
     	this.scroll.setPadding(new Insets(5, 20, 5, 20));
     	this.code = new Text(codeString);							//adds the lolcode	
     	this.scroll.setContent(code);
     	this.map.add(scroll, 0,1);
     	
+    	//container for lexemes
     	this.scroll1.setPrefSize(415, 420);
     	this.scroll1.setPadding(new Insets(5, 20, 5, 20));					
-
     	this.columns.getChildren().add(new Text(lexemesString));
     	this.columns.getChildren().add(new Text(classificationString));
     	this.columns.setSpacing(30);
-    	
     	this.scroll1.setContent(columns);							//adds the lexemes
     	Text l = new Text("\tLexeme\t\t\tClassification");
     	this.titles.setTop(this.lex);
@@ -161,11 +163,12 @@ public class ProjectStage{
     	this.titles.setBottom(scroll1);
     	this.map.add(titles,1,1);
     	
+    	//container for symbol table
     	this.scroll2.setPrefSize(415, 420);
     	this.scroll2.setPadding(new Insets(5, 20, 5, 20));
-    	this.tables = new Text(tableString);						//adds the semantic analysis
-    	this.scroll2.setContent(tables);
-    	
+    	this.columns1.getChildren().add(new Text(identifierString));//adds the semantic analysis
+    	this.columns1.getChildren().add(new Text(valueString));
+    	this.scroll2.setContent(columns1);
     	Text i = new Text("\tIdentifier\t\t\tValue");
     	this.titles1.setTop(this.table);
     	BorderPane.setAlignment(this.table, Pos.CENTER);
@@ -175,26 +178,33 @@ public class ProjectStage{
     	this.map.add(titles1,2,1);
     	this.map.setHgap(5);
     	this.map.setVgap(5);
-
+    	
+    	//container for the whole window
 		this.box.setLayoutX(ProjectStage.WINDOW_WIDTH*0.02);
 	    this.box.setLayoutY(ProjectStage.WINDOW_HEIGHT*0.02);
-	    
 	    this.box.setSpacing(5);
     	
+	    //execute button
     	Button execute = new Button("Execute");
     	execute.setFont(this.theFont);
     	this.addEventHandler(execute);
     	execute.setMaxWidth(Double.MAX_VALUE);
-    	this.textarea.setPrefHeight(200);
     	
-    	this.textarea.setText("oh hello there oUo"); //test
+    	//terminal
+    	this.terminal.setPrefHeight(200);
+    	this.terminal.setEditable(false);
+    	this.terminal.setText("oh hello there oUo"); //test
     	
+    	//input window
     	this.input.setPrefHeight(100);
-    	this.input.setText("input here");
-    	this.box.getChildren().addAll(map,execute,this.textarea,this.input);
+    	this.input.setPromptText("Input Here");
+    	this.input.setDisable(true);
+    	
+    	this.box.getChildren().addAll(map,execute,this.terminal,this.input);
     	this.root.getChildren().add(this.box);
     	
-		stage.setTitle("Project Interpreter");
+    	//set stage
+		stage.setTitle("Project LOLCode Interpreter");
 		stage.setScene(this.scene);
 		stage.setResizable(false);
 		stage.show();
@@ -202,57 +212,78 @@ public class ProjectStage{
     
     public void read(String path) throws Exception{
     	FileHandler fh = new FileHandler();        
-        linesOfCode = new ArrayList<String>(); 
+    	ArrayList<String> linesOfCode = new ArrayList<String>(); 
         linesOfCode = fh.openFile(path);
         LexicalAnalyser lexicalAnalyser = new LexicalAnalyser();
         SyntaxAnalyser syntaxAnalyser = new SyntaxAnalyser();
-        symbolTable = new ArrayList<Token>();
-
-        //clean the code by removing the comments first
-        cleanedProgram = lexicalAnalyser.getCleanProgram(linesOfCode);
+        SemanticAnalyzer semanticAnalyzer = new SemanticAnalyzer();
+        ArrayList<Token> symbolTable = new ArrayList<Token>();
         
-
+        //actual lolcode
+        codeString = new String("");
+        for(String code: linesOfCode) {
+        	codeString = codeString + code + "\n";
+        }
+        
+        //clean the code by removing the comments first
+        ArrayList<String> cleanedProgram = lexicalAnalyser.getCleanProgram(linesOfCode);
+        ArrayList<Token> listOfLexemes;
+        String loc;
+        
         //add it to the symbol table
-        for (String loc : cleanedProgram){
-            newSymbolTable = lexicalAnalyser.lexicalAnalysis(loc);
-            symbolTable.addAll(newSymbolTable);
-            System.out.println("Syntactically correct? " + syntaxAnalyser.syntaxAnalyse(newSymbolTable));
+        boolean noErr = true;
+        for (int i = 0 ; i < cleanedProgram.size(); i++){
+            loc = cleanedProgram.get(i);
+            listOfLexemes = lexicalAnalyser.lexicalAnalysis(loc);
+           
+            symbolTable.addAll(listOfLexemes);
+            if (!syntaxAnalyser.syntaxAnalyse(listOfLexemes)){
+                System.out.println(loc);
+                System.out.println("Syntax error at line " + (i+1));
+                noErr = false;
+                break;
+            }
+        }
+
+        if (!syntaxAnalyser.isEndProgram() && noErr){
+            System.out.println("KTHXBYE not found; Syntax error at line " + cleanedProgram.size());
+        }
+
+        if (!syntaxAnalyser.isEndIfBlock() && noErr){
+            System.out.println("OIC not found; Syntax error!");
         }
         
         //print the cleaned code
-        codeString = new String("");
         for (String s : cleanedProgram){
             System.out.println(s);
-            codeString = codeString + s + "\n";
         }
-
         System.out.println();
 
         //print the tokens
-        for (Token t : symbolTable){
-            System.out.println(t.getLexeme() + " " + t.getType());
-        }
-        
         lexemesString = new String("");
         classificationString = new String("");
-        for(Token l: symbolTable) {
-        	lexemesString = lexemesString + l.getLexeme() + "\n";
-        	classificationString = classificationString + l.getType() + "\n";
+        for (Token t : symbolTable){
+            System.out.println(t.getLexeme() + " " + t.getType());
+        	lexemesString = lexemesString + t.getLexeme() + "\n";
+        	classificationString = classificationString + t.getType() + "\n";
         }
         
         
-        tableString = new String("");
-//        for(Token v: symbolTable) {
-//        	table = table + v.getLexeme() +"\t\t" + v.getType() +"\n";
-//        }
-        tableString = "Semantic Analysis";
+        for(int i = 0; i < symbolTable.size(); i++) {
+        	semanticAnalyzer.setCopyTable(symbolTable.get(i));      
+        }
+        
+        semanticAnalyzer.doTheDew();
+        
     }
     
     public void addEventHandler(Button btn) {
     	btn.setOnMouseClicked(new EventHandler<MouseEvent>() {
     		public void handle(MouseEvent arg0) {
+    			input.setDisable(false);
     			inputString = input.getText();
     			System.out.println(inputString);
+    			input.setPromptText("Input Here");
     		}
     	});
     }
