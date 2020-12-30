@@ -12,6 +12,7 @@ public class SyntaxAnalyser {
     private ArrayList<Token> symbolTable;
     private ArrayList<Token> poppedSymbolTable;
     private boolean isClosedInfiniteArity;  //check for MKAY
+    private boolean seenInfiniteBool; //check for ONE INFINITE BOOLEAN OPERATOR
     private boolean startProgram;   //check for HAI
     private boolean endProgram;     //check for KTHXBYE
     private boolean ifStart;        //check for O RLY?
@@ -24,6 +25,7 @@ public class SyntaxAnalyser {
     public SyntaxAnalyser(){
         this.poppedSymbolTable = new ArrayList<Token>();
         this.isClosedInfiniteArity = true;
+        this.seenInfiniteBool = false;
         this.startProgram = false;
         this.endProgram = false;
         this.ifStart = false;        
@@ -35,12 +37,15 @@ public class SyntaxAnalyser {
     }
 
     private ArrayList<String> parse() throws Exception{
+        this.seenInfiniteBool = false; //reset this every line because if we don't we'll only have ONE Infinite bool operator for the whole program.
         if (this.symbolTable.size() != 0){
             String lexemeType = this.symbolTable.get(0).getType();
             if (lexemeType.equals("Arithmetic operator")){
                 return this.parseArithmetic();
             } else if (lexemeType.equals("Finite boolean operator")){
                 return this.parseFiniteBool();
+            } else if (lexemeType.equals("Not operator")){
+                return this.parseNotKeyword();
             } else if (lexemeType.equals("Infinite boolean operator")){
                 return this.parseInfiniteBool();
             } else if (lexemeType.equals("Comparison operator")){
@@ -77,6 +82,7 @@ public class SyntaxAnalyser {
         Token keyWord; 
         if (this.symbolTable.size() != 0){
             keyWord = this.symbolTable.get(0);
+            
             if (keyWord.getType().equals(type)){    //get the type of keyword we need
                 this.poppedSymbolTable.add(this.symbolTable.remove(0));
                 parseTree.add(keyWord.getType());
@@ -152,6 +158,9 @@ public class SyntaxAnalyser {
             parseTree = this.popLexeme(parseTree, "Finite boolean operator"); //get finite bool ops such as "BOTH OF, EITHER OF"
             parseTree.addAll(this.parseFiniteBool());   //get a nested arithmetic operator OR a literal
             parseTree = this.popLexeme(parseTree, "Arity keyword"); //get AN
+            
+            this.seenInfiniteBool = false;  //reset this because we can have two infinite boolean op at each finite operand.
+            //BOTH OF ALL OF x AN y MKAY AN ALL OF z an f MKAY
             parseTree.addAll(this.parseFiniteBool());   //get a nested arithmetic operator OR a literal
 
         } catch(Exception e){
@@ -183,6 +192,9 @@ public class SyntaxAnalyser {
                 return new ArrayList<String>(Arrays.asList(t.getType()));
             } else if (t.getType().equals("Comparison operator")) { //check for comparison too
                 return this.parseComparison();
+            } else if (t.getType().equals("Infinite boolean operator") && !this.seenInfiniteBool){    //check for ALL OF
+                this.seenInfiniteBool = true;
+                return this.parseInfiniteBool();
             }
 
             return new ArrayList<String>();
@@ -207,6 +219,9 @@ public class SyntaxAnalyser {
         try{
             this.isClosedInfiniteArity = false;
             parseTree = this.popLexeme(parseTree, "Infinite boolean operator"); //get ALL OF, etc  
+
+            this.seenInfiniteBool = true; //set this to true, we can't nest another infinite boolean op.
+
             parseTree.addAll(this.parseFiniteBool());   //get a nested finite boolean or a literal
             parseTree = this.popLexeme(parseTree, "Arity keyword"); //get AN
             parseTree.addAll(this.parseFiniteBool());   //get a nested arithmetic operator OR a literal
