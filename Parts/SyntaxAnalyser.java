@@ -22,6 +22,12 @@ public class SyntaxAnalyser {
     private boolean caseStatementFound; //check for OMG
     private boolean caseEnd;    //check for OIC in case statement 
 
+    private ArrayList<String> comparisonFirstArg;
+    private ArrayList<String> comparisonSecArg;
+    //check if we have the same arguments in the first two values we see.
+    //BOTH OF x AN BIGGR OF x AN y <-- correct
+    //BOTH OF z AN BIGGR OF x AN Y <-- incorrect.
+
     public SyntaxAnalyser(){
         this.poppedSymbolTable = new ArrayList<Token>();
         this.isClosedInfiniteArity = true;
@@ -299,6 +305,16 @@ public class SyntaxAnalyser {
         } else throw new Exception("Inadequate arguments");
     }
 
+    private ArrayList<String> getComparisonArgs(int startIndex){
+        ArrayList<String> parseTree = new ArrayList<String>();
+
+        for (int i = startIndex; i < this.poppedSymbolTable.size(); i++){
+            parseTree.add(this.poppedSymbolTable.get(i).getLexeme());
+        }
+
+        return parseTree;
+    }
+
     private ArrayList<String> parseRelationalKeyword(){ 
         //BOTH SAEM <x> AN BIGGR OF <x> AN <y>
         //BOTH SAEM <x> AN SMALLR OF <x> AN <y>
@@ -309,7 +325,9 @@ public class SyntaxAnalyser {
               
         try{
             parseTree = this.popLexeme(parseTree, "Comparison operator"); //get BOTH SAME, DIFFRINT
-            parseTree.addAll(this.parseArithmetic());   //get a nested arithmetic operator OR a literal
+            ArrayList<String> firstArg = this.parseArithmetic();
+            this.comparisonFirstArg = this.getComparisonArgs(this.poppedSymbolTable.size() - firstArg.size());
+            parseTree.addAll(firstArg);   //get a nested arithmetic operator OR a literal
             parseTree = this.popLexeme(parseTree, "Arity keyword"); //get AN
      
             //we must check for two specific keywords : biggr of or smallr of
@@ -323,7 +341,19 @@ public class SyntaxAnalyser {
                 }
             } else throw new Exception("Inadequate arguments");
 
-            parseTree.addAll(this.parseArithmetic());   //get a nested arithmetic operator OR a literal
+            ArrayList<String> secondArg = this.parseArithmetic();
+            this.comparisonSecArg = this.getComparisonArgs(this.poppedSymbolTable.size() - secondArg.size());
+            //check if firstArg is same as SecArg
+
+            if (this.comparisonFirstArg.size() == this.comparisonSecArg.size()){
+                for (int i = 0; i < this.comparisonFirstArg.size(); i++){
+                    if (!this.comparisonFirstArg.get(i).equals(this.comparisonSecArg.get(i))){
+                        throw new Exception("Argument after BIGGR OF or SMALLR OF is not the same as the first argument in BOTH OF or SMALLR OF");
+                    }
+                }
+            } else throw new Exception("Argument after BIGGR OF or SMALLR OF is not the same as the first argument in BOTH OF or SMALLR OF");
+
+            parseTree.addAll(secondArg);   //get a nested arithmetic operator OR a literal
             parseTree = this.popLexeme(parseTree, "Arity keyword"); //get AN
             parseTree.addAll(this.parseArithmetic());   //get a nested arithmetic operator OR a literal
 
