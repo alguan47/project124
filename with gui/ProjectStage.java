@@ -2,6 +2,8 @@ package application;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+
 import FileHandlers.FileHandler;
 import Parts.LexicalAnalyser;
 import Parts.SemanticAnalyzer;
@@ -36,7 +38,7 @@ import javafx.stage.Stage;
 
 public class ProjectStage{
 	private Scene scene;
-	static Stage stage;
+	private Stage stage;
 	private Group root;
 	private Canvas canvas;
 	private GraphicsContext gc;
@@ -69,6 +71,11 @@ public class ProjectStage{
 	static String classificationString;
 	static String identifierString;
 	static String valueString;
+	
+	private ArrayList<String> linesOfCode;
+	private ArrayList<Token> visibles;
+	private int num;
+	private Boolean check;
 	
 	final static int WINDOW_WIDTH = 1300; 
 	final static int WINDOW_HEIGHT = 920;
@@ -103,6 +110,8 @@ public class ProjectStage{
 		this.titles1 = new BorderPane();					//container for titles and scrollpane of semantic analysis
 		this.columns = new HBox();							//conatainer for the values of syntactical analysis
 		this.columns1 = new HBox();							//conatainer for the values of semantic analysis
+		this.visibles = new ArrayList<Token>();
+		this.num = 0;
 		
 		this.theFont = Font.font("Helvetica",20);			//set font type, style and size
 		this.label.setFont(this.theFont);
@@ -193,7 +202,7 @@ public class ProjectStage{
     	//terminal
     	this.terminal.setPrefHeight(200);
     	this.terminal.setEditable(false);
-    	this.terminal.setText("oh hello there oUo"); //test
+    	terminalVisible();
     	
     	//input window
     	this.input.setPrefHeight(100);
@@ -210,9 +219,49 @@ public class ProjectStage{
 		stage.show();
     }
     
+    public void terminalVisible() {
+    	for(String code: linesOfCode) {
+    		if(code.contains("VISIBLE")) {
+    			String commentRemove[];
+    			String hold = "";
+    			String copy = "";
+    			hold = code.trim();
+    			Boolean pair = false;
+
+    			for(int a=0;a<hold.length();a++) {
+    				if(pair && hold.charAt(a) != '\"') {
+    					copy = copy + hold.charAt(a);
+    					continue;
+    				}
+    				if(hold.charAt(a) == '\"') {
+    					if(pair) {
+    						pair = false;
+    						continue;
+    					}else {
+    						pair = true;
+    						continue;
+    					}
+    				}
+    				//this part should be where the variable be or whatever arithmetic happens
+    				copy = copy + hold.charAt(a);
+    			}
+    			copy = copy.replaceAll("VISIBLE ", "");
+    			commentRemove = copy.split("BTW");
+    			if(commentRemove != null) {
+    				copy = commentRemove[0];
+    			}
+    			this.visibles.add(new Token(copy,"visible"));
+
+    			
+    		}else if(code.contains("GIMMEH")) {
+    			this.visibles.get(this.visibles.size()-1).gimmeEdit();
+    		}
+    	}
+    }
+    
     public void read(String path) throws Exception{
     	FileHandler fh = new FileHandler();        
-    	ArrayList<String> linesOfCode = new ArrayList<String>(); 
+    	linesOfCode = new ArrayList<String>(); 
         linesOfCode = fh.openFile(path);
         LexicalAnalyser lexicalAnalyser = new LexicalAnalyser();
         SyntaxAnalyser syntaxAnalyser = new SyntaxAnalyser();
@@ -269,21 +318,45 @@ public class ProjectStage{
         }
         
         
-        for(int i = 0; i < symbolTable.size(); i++) {
-        	semanticAnalyzer.setCopyTable(symbolTable.get(i));      
-        }
-        
-        semanticAnalyzer.doTheDew();
+//        for(int i = 0; i < symbolTable.size(); i++) {
+//        	semanticAnalyzer.setCopyTable(symbolTable.get(i));      
+//        }
+//        
+//        semanticAnalyzer.doTheDew();
         
     }
     
     public void addEventHandler(Button btn) {
     	btn.setOnMouseClicked(new EventHandler<MouseEvent>() {
     		public void handle(MouseEvent arg0) {
-    			input.setDisable(false);
-    			inputString = input.getText();
-    			System.out.println(inputString);
     			input.setPromptText("Input Here");
+    			if(visibles.size() != 0 && num < visibles.size()) {
+	    			String print = "";
+	    			if(visibles.get(num).gimme()) {
+	    				input.setDisable(false);
+	    				inputString = input.getText();
+	    				System.out.println(inputString);
+	    				terminal.setText(visibles.get(num).getLexeme());
+	    			}else{
+	    				input.setText("");
+	    				input.setDisable(true);
+	    				while(!visibles.get(num).gimme()) {
+	    					print = print + visibles.get(num).getLexeme() + "\n";
+	    	    			if(num != visibles.size()-1) {
+	    	    				num++;
+	    	    			}else {
+	    	    				break;
+	    	    			}
+	    				}
+	    				terminal.setText(print);
+	    				num++;
+	    			}
+	    			
+	    			if(num != visibles.size()-1) {
+	    				num++;
+	    			}
+    			}
+
     		}
     	});
     }
